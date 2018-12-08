@@ -11,10 +11,15 @@ namespace FluentBuilder
         private DateTime _date;
 
         private readonly ArticleBuilder _articleBuilder;
+        private readonly CustomerBuilder _customerBuilder;
 
-        public OrderBuilder()
+        public static OrderBuilder AnOrder() =>
+            new OrderBuilder();
+
+        private OrderBuilder()
         {
             _articleBuilder = new ArticleBuilder();
+            _customerBuilder = new CustomerBuilder();
         }
 
         public OrderBuilder WithNumber(int i)
@@ -34,13 +39,37 @@ namespace FluentBuilder
             func(_articleBuilder);
             return this;
         }
+        
+        public OrderBuilder HavingCustomer(Func<CustomerBuilder, CustomerBuilder> func)
+        {
+            func(_customerBuilder);
+            return this;
+        }
 
         public Order Build() =>
             new Order
             {
                 Number = _number,
                 Date = _date,
-                Article = _articleBuilder.Build()
+                Article = _articleBuilder.Build(),
+                Customer = _customerBuilder.Build()
+            };
+    }
+
+    public class CustomerBuilder
+    {
+        private string _name;
+
+        public CustomerBuilder WithName(string name)
+        {
+            _name = name;
+            return this;
+        }
+
+        public Customer Build() => 
+            new Customer
+            {
+                Name = _name
             };
     }
 
@@ -76,8 +105,14 @@ namespace FluentBuilder
         public int Number { get; set; }
         public DateTime Date { get; set; }
         public Article Article { get; set; }
+        public Customer Customer { get; set; }
     }
-    
+
+    public class Customer
+    {
+        public string Name { get; set; }
+    }
+
     public class Article
     {
         public decimal Price { get; set; }
@@ -89,12 +124,14 @@ namespace FluentBuilder
         [Fact]
         public void should_build_an_order()
         {
-            var order = new OrderBuilder()
+            var order = AnOrder()
                 .WithNumber(10)
                 .WithDate(new DateTime(2018, 12, 24))
                 .HavingAnArticle(a => a
                     .WithPrice(32.50m)
                     .WithCategory("books"))
+                .HavingCustomer(c => c
+                    .WithName("Amelia"))
                 .Build();
 
             order.Number.Should().Be(10);
@@ -102,6 +139,8 @@ namespace FluentBuilder
             
             order.Article.Price.Should().Be(32.50m);
             order.Article.Category.Should().Be("books");
+
+            order.Customer.Name.Should().Be("Amelia");
         }
     }
 }
